@@ -35,6 +35,8 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 
 import GraphServer.Constants;
 
@@ -188,6 +190,16 @@ public class GameScreen extends JPanel implements ActionListener, StartStopPanel
 				
 		this.funcField.addKeyListener(this);
 		this.chatField.addKeyListener(this);
+		
+		this.funcField.getDocument().addDocumentListener(new DocumentListener() {
+			public void insertUpdate(DocumentEvent e) { updatePreview(); }
+			public void removeUpdate(DocumentEvent e) { updatePreview(); }
+			public void changedUpdate(DocumentEvent e) { updatePreview(); }
+			private void updatePreview() {
+				String text = funcField.getText();
+				graphwar.getGameData().updatePreviewFunction(text);
+			}
+		});
 		
 		this.addMouseListener(this);
 		this.plane.addMouseListener(this);
@@ -353,6 +365,7 @@ public class GameScreen extends JPanel implements ActionListener, StartStopPanel
 				public void run()
 				{
 					funcField.setEnabled(false);
+					graphwar.getGameData().clearPreviewFunction();
 				}
 			}
 			);

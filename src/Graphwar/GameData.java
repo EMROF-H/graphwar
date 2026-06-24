@@ -53,6 +53,7 @@ public class GameData implements Runnable
 	private boolean nextTurnSent;
 	
 	private Function function;
+	private Function previewFunction;
 	private boolean drawingFunction;
 	private long timeStartedDrawingFunction;
 	private boolean exploding;
@@ -83,6 +84,7 @@ public class GameData implements Runnable
 		gameState = Constants.NONE;
 		
 		function = null;
+		previewFunction = null;
 		drawingFunction = false;
 		exploding = false;
 		soldiersHit = new ArrayList<Soldier>();
@@ -281,6 +283,66 @@ public class GameData implements Runnable
 		{
 			e.printStackTrace();
 		}
+	}
+
+	public boolean isDrawingPreviewFunction()
+	{
+		return previewFunction != null;
+	}
+
+	public Function getPreviewFunction()
+	{
+		return previewFunction;
+	}
+
+	public void updatePreviewFunction(String functionString)
+	{
+		if(drawingFunction || gameState != Constants.GAME)
+		{
+			previewFunction = null;
+			return;
+		}
+
+		if(functionString == null || functionString.trim().isEmpty())
+		{
+			previewFunction = null;
+			return;
+		}
+
+		try
+		{
+			previewFunction = new Function(functionString);
+
+			boolean inverted = isFunctionReversed();
+			Player[] playersArray = players.toArray(new Player[0]);
+			double angle = 0;
+			if(currentTurn >= 0 && currentTurn < players.size())
+			{
+				angle = players.get(currentTurn).getCurrentTurnSoldier().getAngle();
+			}
+
+			switch(gameMode)
+			{
+				case Constants.NORMAL_FUNC:
+					previewFunction.processFunctionRange(obstacle, playersArray, players.size(), currentTurn, inverted);
+					break;
+				case Constants.FST_ODE:
+					previewFunction.processRK4Range(obstacle, playersArray, players.size(), currentTurn, inverted);
+					break;
+				case Constants.SND_ODE:
+					previewFunction.processRK42Range(obstacle, playersArray, players.size(), currentTurn, angle, inverted);
+					break;
+			}
+		}
+		catch(MalformedFunction e)
+		{
+			previewFunction = null;
+		}
+	}
+
+	public void clearPreviewFunction()
+	{
+		previewFunction = null;
 	}
 
 	public void sendFunctionPreview(String functionPreview)
@@ -807,6 +869,7 @@ public class GameData implements Runnable
 		
 		this.drawingFunction = false;
 		this.exploding = false;
+		this.previewFunction = null;
 		
 		int numCircles = Integer.parseInt(info[1]);
 		
@@ -908,6 +971,7 @@ public class GameData implements Runnable
 		turnTimeUp = false;
 		this.drawingFunction = false;
 		this.exploding = false;
+		this.previewFunction = null;
 		nextTurnSent = false;
 		
 		((GameScreen)graphwar.getUI().getScreen(Constants.GAME_SCREEN)).repaintAngle();
@@ -930,7 +994,8 @@ public class GameData implements Runnable
 				processFunction(player, function);
 				
 				this.drawingFunction = true;
-				this.timeStartedDrawingFunction = System.currentTimeMillis();	
+				this.timeStartedDrawingFunction = System.currentTimeMillis();
+				this.previewFunction = null;
 			
 				((GameScreen)graphwar.getUI().getScreen(Constants.GAME_SCREEN)).startDrawingFunction();
 								

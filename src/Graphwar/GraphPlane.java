@@ -18,6 +18,7 @@
 package Graphwar;
 
 import java.awt.AlphaComposite;
+import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
@@ -225,16 +226,12 @@ public class GraphPlane extends JPanel implements ActionListener
 	
 	public void paintComponent(Graphics g)
 	{		
-		//long times[] = new long[6];
-		
-		//times[0] = System.nanoTime();
-				
 		boolean reversed = graphwar.getGameData().isTerrainReversed();
 		
 		if(repaintBack)
 		{
-			drawBackground(backg, reversed);	//times[1] = System.nanoTime();
-			drawPlayersNames(backg, reversed);	///times[2] = System.nanoTime();	
+			drawBackground(backg, reversed);
+			drawPlayersNames(backg, reversed);	
 			drawCurrentPlayerMarker(backg, reversed);
 			
 			if(nextMarker)
@@ -246,23 +243,11 @@ public class GraphPlane extends JPanel implements ActionListener
 		}
 		
 		g.drawImage(background, 0, 0, null);
-	//	else
-	//	{
-	//		times[1] = System.nanoTime();
-	//		times[2] = System.nanoTime();
-	//	}
-		
-		drawSoldiers(g, reversed);	//	times[3] = System.nanoTime();
-		drawFunction(g, reversed);	//	times[4] = System.nanoTime();
-		drawExplosion(g, reversed);	//	times[5] = System.nanoTime();
-				
-	//	for(int i=1; i<times.length; i++)
-	//	{
-	//		System.out.println(i+": "+(times[i]-times[i-1]));
-	//	}
 	
-	//	System.out.println();
-	//	timeFinishedLastPaint = System.currentTimeMillis();
+		drawSoldiers(g, reversed);
+		drawPreviewFunction(g, reversed);
+		drawFunction(g, reversed);
+		drawExplosion(g, reversed);
 	}
 		
 	private void drawBackground(Graphics2D g, boolean reversed)
@@ -376,6 +361,73 @@ public class GraphPlane extends JPanel implements ActionListener
 					
 			repaintBack = true;
 		}
+	}
+
+	private void drawPreviewFunction(Graphics g, boolean terrainReversed)
+	{
+		if(graphwar.getGameData().isDrawingFunction())
+		{
+			return;
+		}
+
+		if(graphwar.getGameData().isDrawingPreviewFunction() == false)
+		{
+			return;
+		}
+
+		Function preview = graphwar.getGameData().getPreviewFunction();
+		int numSteps = preview.getNumSteps();
+
+		if(numSteps <= 0)
+		{
+			return;
+		}
+
+		Graphics2D g2d = (Graphics2D)g;
+		g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+		boolean funcReversed = graphwar.getGameData().isFunctionReversed();
+		boolean reversed = (funcReversed || terrainReversed) && !(funcReversed && terrainReversed);
+
+		Color playerColor = Color.GRAY;
+		try
+		{
+			playerColor = graphwar.getGameData().getCurrentTurnPlayer().getColor();
+		}
+		catch(Exception e) {}
+
+		GeneralPath path = new GeneralPath();
+
+		double x = convertX(preview.getX(0));
+		double y = convertY(preview.getY(0));
+
+		if(reversed)
+		{
+			x = Constants.PLANE_LENGTH - x;
+		}
+
+		path.moveTo(x, y);
+
+		for(int i = 1; i < numSteps; i++)
+		{
+			x = convertX(preview.getX(i));
+			y = convertY(preview.getY(i));
+
+			if(reversed)
+			{
+				x = Constants.PLANE_LENGTH - x;
+			}
+
+			path.lineTo(x, y);
+		}
+
+		float[] dash = {6.0f, 4.0f};
+		BasicStroke dashedStroke = new BasicStroke(1.5f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 10.0f, dash, 0.0f);
+
+		g2d.setStroke(dashedStroke);
+		g2d.setColor(new Color(playerColor.getRed(), playerColor.getGreen(), playerColor.getBlue(), 120));
+		g2d.draw(path);
+		g2d.setStroke(new BasicStroke(1.0f));
 	}
 	
 	
